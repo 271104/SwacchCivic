@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pending Complaints</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <h2>Pending Complaints</h2>
+
+  <div id="complaints">
+    <p>Loading complaints...</p>
+  </div>
+
+  <p>
+    <a href="officer-dashboard.html">⬅ Back to Dashboard</a>
+  </p>
+
+  <script src="js/config.js"></script>
+  <script>
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    if (!token || role !== "officer") {
+      alert("Access denied");
+      window.location.href = "officer-login.html";
+    }
+
+    fetch(`${API_URL}/api/complaints`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+    .then(res => res.json())
+    .then(data => {
+      const div = document.getElementById("complaints");
+      div.innerHTML = "";
+
+      if (!data.length) {
+        div.innerHTML = "<p>No complaints found.</p>";
+        return;
+      }
+
+      data
+        .filter(c => c.status === "pending")
+        .forEach(c => {
+          div.innerHTML += `
+            <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px">
+              <h4>${c.type}</h4>
+              <p>${c.description}</p>
+              <p><b>Location:</b> ${c.location}</p>
+              <p><b>Status:</b> ${c.status}</p>
+              <img src="${c.photoUrl}" width="200" onerror="this.style.display='none'" />
+              <button onclick="resolveComplaint('${c.id}')">
+                Mark as Resolved
+              </button>
+
+            </div>
+          `;
+        });
+    })
+    .catch(() => {
+      document.getElementById("complaints").innerHTML =
+        "<p>Error loading complaints</p>";
+    });
+
+    function resolveComplaint(id) {
+      const token = localStorage.getItem("token");
+      fetch(`${API_URL}/api/complaints/${id}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: "resolved" }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          alert("Complaint resolved");
+          location.reload();
+        });
+    }
+
+  </script>
+
+</body>
+</html>

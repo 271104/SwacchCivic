@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Resolved Complaints</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <h2>Resolved Complaints</h2>
+
+  <div id="complaints">
+    <p>Loading resolved complaints...</p>
+  </div>
+
+  <p>
+    <a href="officer-dashboard.html">⬅ Back to Dashboard</a>
+  </p>
+
+  <script src="js/config.js"></script>
+  <script>
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
+    if (!token || role !== "officer") {
+      alert("Access denied");
+      window.location.href = "officer-login.html";
+    }
+
+    fetch(`${API_URL}/api/complaints`, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        const div = document.getElementById("complaints");
+        div.innerHTML = "";
+
+        const resolvedComplaints = data.filter(
+          c => c.status === "resolved"
+        );
+
+        if (!resolvedComplaints.length) {
+          div.innerHTML = "<p>No resolved complaints.</p>";
+          return;
+        }
+
+        resolvedComplaints.forEach(c => {
+          div.innerHTML += `
+            <div style="border:1px solid #28a745; padding:10px; margin-bottom:10px">
+              <h4>${c.type}</h4>
+              <p>${c.description}</p>
+              <p><b>Location:</b> ${c.location}</p>
+              <p><b>Status:</b> <span style="color:green">${c.status}</span></p>
+              <img src="${c.photoUrl}" width="200" onerror="this.style.display='none'" />
+            </div>
+          `;
+        });
+      })
+      .catch(() => {
+        document.getElementById("complaints").innerHTML =
+          "<p>Error loading complaints</p>";
+      });
+  </script>
+
+</body>
+</html>

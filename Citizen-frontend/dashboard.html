@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Citizen Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 300px;
+    }
+    .dashboard a {
+      text-align: center;
+      padding: 12px;
+      background: #0b5ed7;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+    }
+    .dashboard a:hover {
+      background: #084298;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Citizen Dashboard</h2>
+
+  <div class="dashboard">
+    <a href="complaint.html">➕ Register Complaint</a>
+    <a href="my-complaints.html">📋 My Complaints</a>
+    <a href="#" onclick="logout()">🚪 Logout</a>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script>
+    // Protect dashboard
+    if (!localStorage.getItem("token")) {
+      window.location.href = "login.html";
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      window.location.href = "login.html";
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register Complaint</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <h2>Register Complaint</h2>
+
+  <form id="complaintForm" enctype="multipart/form-data">
+
+    <label>Type of Complaint</label>
+    <select id="type" required>
+      <option value="">-- Select --</option>
+      <option value="Garbage">Garbage</option>
+      <option value="Road Damage">Road Damage</option>
+      <option value="Water Leakage">Water Leakage</option>
+      <option value="Street Light">Street Light</option>
+      <option value="Drainage">Drainage</option>
+    </select>
+
+    <label>Description</label>
+    <textarea id="description" placeholder="Describe the issue" required></textarea>
+
+    <label>Location</label>
+    <input type="text" id="location" placeholder="Enter location" required />
+
+    <label>Upload Photo</label>
+    <input type="file" name="photo" id="photo" required>
+
+
+    <button type="submit">Submit Complaint</button>
+
+  </form>
+
+  <p><a href="dashboard.html">⬅ Back to Dashboard</a></p>
+
+  <script src="js/config.js"></script>
+  <script src="js/complaint.js"></script>
+
+</body>
+</html>

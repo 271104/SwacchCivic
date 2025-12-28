@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>My Complaints</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .complaint {
+      border: 1px solid #ccc;
+      padding: 12px;
+      margin-bottom: 12px;
+      border-radius: 5px;
+      background: #f9f9f9;
+    }
+    .complaint img {
+      margin-top: 8px;
+      max-width: 250px;
+      display: block;
+    }
+    .status {
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-weight: bold;
+      display: inline-block;
+    }
+    .pending{
+      background-color: #ffc107;
+      color: #000;
+    }
+    .in_progress{
+      background-color: #0dcaf0;
+      color: #000;
+    }
+    .resolved{
+      background-color: #198754;
+      color: #fff;
+    }
+      
+  </style>
+</head>
+<body>
+
+  <h2>My Complaints</h2>
+
+  <div id="complaints"></div>
+
+  <p>
+    <a href="dashboard.html">⬅ Back to Dashboard</a>
+  </p>
+
+  <script src="js/config.js"></script>
+  <script src="js/my-complaints.js"></script>
+</body>
+</html>
