@@ -118,6 +118,9 @@ const authMiddleware = require("../middleware/auth");
 const requireRole = require("../middleware/role");
 const upload = require("../middleware/upload");
 const Complaint = require("../models/Complaint");
+const { analyzeComplaintImage } = require("../services/aiAnalysisService");
+const { calculatePriorityScore, getEstimatedResolution } = require("../utils/priorityCalculator");
+const { assignComplaintToDepartment } = require("../services/departmentAssignment");
 
 const router = express.Router();
 
@@ -131,7 +134,7 @@ router.post(
   upload.single("photo"),
   async (req, res) => {
     try {
-      const { type, description, location } = req.body;
+      const { type, description, location, latitude, longitude, autoDetectedLocation } = req.body;
 
       if (!type) {
         return res.status(400).json({ message: "Complaint type is required" });
@@ -141,12 +144,68 @@ router.post(
         return res.status(400).json({ message: "Complaint photo is required" });
       }
 
+      // 🤖 AI ANALYSIS
+      let aiAnalysis = null;
+      let aiInsights = null;
+
+      try {
+        console.log(`🤖 Analyzing ${type} complaint image...`);
+        aiAnalysis = await analyzeComplaintImage(req.file.path, type);
+
+        // Calculate priority score
+        const priorityScore = calculatePriorityScore(aiAnalysis, type, location);
+        aiAnalysis.priorityScore = priorityScore;
+
+        console.log(`✅ AI Analysis complete - Severity: ${aiAnalysis.severity}%, Priority: ${aiAnalysis.priorityLevel}`);
+
+        // Prepare insights for response
+        aiInsights = {
+          severity: `${aiAnalysis.severity}%`,
+          priority: aiAnalysis.priorityLevel,
+          priorityScore: priorityScore,
+          estimatedResolution: getEstimatedResolution(priorityScore),
+          description: aiAnalysis.description || aiAnalysis.aiDescription,
+          detectedIssues: aiAnalysis.detectedIssues || [],
+          confidence: aiAnalysis.confidence || 0
+        };
+
+      } catch (aiError) {
+        console.error('⚠️ AI analysis failed:', aiError.message);
+        // Continue without AI analysis (graceful degradation)
+        aiAnalysis = {
+          severity: 50,
+          priorityLevel: 'medium',
+          priorityScore: 50,
+          aiError: true
+        };
+      }
+
+      // Prepare geo-location data
+      const coordinates = (latitude && longitude) ? {
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude)
+      } : undefined;
+
+      // 🏢 AUTO-ASSIGN TO DEPARTMENT
+      const assignedDepartment = await assignComplaintToDepartment(type);
+      if (assignedDepartment) {
+        console.log(`✅ Complaint auto-assigned to department`);
+      }
+
+      // Create complaint with AI data and geo-location
       const complaint = new Complaint({
-        citizen: req.userId,   // ✅ FIXED
+        citizen: req.userId,
         type,
-        description,
+        description: description || aiAnalysis?.description || aiAnalysis?.aiDescription,
         location,
+        coordinates,
+        autoDetectedLocation,
+        manualLocation: location,
         photoPath: req.file.path,
+        status: 'pending',
+        aiAnalysis: aiAnalysis || undefined,
+        assignedDepartment: assignedDepartment || undefined,
+        assignedAt: assignedDepartment ? new Date() : undefined
       });
 
       await complaint.save();
@@ -154,13 +213,16 @@ router.post(
       res.status(201).json({
         message: "Complaint registered successfully",
         complaint,
+        aiInsights: aiInsights
       });
+
     } catch (err) {
       console.error("Create complaint error:", err.message);
       res.status(500).json({ message: "Server error while creating complaint" });
     }
   }
 );
+
 
 /* ===============================
    Citizen: My Complaints
@@ -184,7 +246,7 @@ router.get(
 );
 
 /* ===============================
-   Officer: All Complaints
+   Officer: All Complaints (filtered by department)
 ================================ */
 router.get(
   "/",
@@ -192,26 +254,46 @@ router.get(
   requireRole("officer"),
   async (req, res) => {
     try {
-      const complaints = await Complaint.find()
+      // Get officer's department
+      const Officer = require("../models/Officer");
+      const officer = await Officer.findById(req.userId).populate('department');
+      
+      // Build query - filter by department if officer has one
+      const query = {};
+      if (officer && officer.department) {
+        query.assignedDepartment = officer.department._id;
+        console.log(`🔍 Filtering complaints for department: ${officer.department.name}`);
+      }
+
+      const complaints = await Complaint.find(query)
         .populate("citizen", "name phone")
+        .populate("assignedDepartment", "name")
         .sort({ createdAt: -1 });
 
       const formatted = complaints.map((c) => ({
-        id: c._id,
+        _id: c._id,  // ✅ Changed from 'id' to '_id'
+        id: c._id,   // Keep both for compatibility
         type: c.type,
         description: c.description,
         location: c.location,
         status: c.status,
         createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+        aiAnalysis: c.aiAnalysis,  // ✅ Include AI analysis
+        assignedDepartment: c.assignedDepartment ? {
+          id: c.assignedDepartment._id,
+          name: c.assignedDepartment.name
+        } : null,
         citizen: c.citizen
           ? {
-              id: c.citizen._id,
-              name: c.citizen.name,
-              phone: c.citizen.phone,
-            }
+            id: c.citizen._id,
+            name: c.citizen.name,
+            phone: c.citizen.phone,
+          }
           : null,
 
         // ✅ Windows path → browser-safe URL
+        photoPath: c.photoPath,  // ✅ Include original path
         photoUrl: c.photoPath
           ? `http://localhost:5000/${c.photoPath.replace(/\\/g, "/")}`
           : null,

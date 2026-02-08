@@ -1,12 +1,54 @@
-# Node
+# Dependencies
 node_modules/
+package-lock.json
 
-# Env files
+# Environment variables
 .env
+.env.local
+.env.production
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
+yarn-error.log*
+*.log
 
-# OS
+# OS files
 .DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# AI/Kiro related files (exclude from GitHub)
+.kiro/
+*.bat
+CLEANUP_COMPLETE.md
+create-officer.bat
+start-dev.bat
+
+# Build files
+dist/
+build/
+*.tsbuildinfo
+
+# Uploads (user generated content)
+Citizen-backend/uploads/complaints/*.jpg
+Citizen-backend/uploads/complaints/*.jpeg
+Citizen-backend/uploads/complaints/*.png
+
+# Keep the folder structure but ignore images
+!Citizen-backend/uploads/complaints/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Testing
+coverage/
+.nyc_output/

@@ -1,0 +1,8 @@
+Please place the following official SMC images in this public folder:
+
+1. smc-header-logo.png - The header logo with "Solapur Municipal Corporation" text
+2. smc-banner.png - The colorful Smart City banner
+
+These images will be automatically used in both citizen and officer portals.
+
+After placing the images, delete this file.

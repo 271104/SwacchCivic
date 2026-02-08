@@ -1,0 +1,2 @@
+# This file ensures the complaints folder is tracked by git
+# Actual complaint images will be ignored by .gitignore
