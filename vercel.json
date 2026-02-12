@@ -1,0 +1,33 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "Citizen-backend/server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "citizen-frontend-react/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "citizen-frontend-react/dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "Citizen-backend/server.js"
+    },
+    {
+      "src": "/uploads/(.*)",
+      "dest": "Citizen-backend/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "citizen-frontend-react/dist/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  }
+}
