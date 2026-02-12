@@ -150,7 +150,11 @@ router.post(
 
       try {
         console.log(`🤖 Analyzing ${type} complaint image...`);
-        aiAnalysis = await analyzeComplaintImage(req.file.path, type);
+        console.log(`   Description: "${description}"`);
+        console.log(`   Location: "${location}"`);
+        
+        // Pass description and location to AI for better analysis
+        aiAnalysis = await analyzeComplaintImage(req.file.path, type, description, location);
 
         // Calculate priority score
         const priorityScore = calculatePriorityScore(aiAnalysis, type, location);

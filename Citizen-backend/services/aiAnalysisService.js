@@ -7,9 +7,11 @@ const path = require('path');
  * Analyze complaint image using Gemini AI
  * @param {string} imagePath - Path to the uploaded image
  * @param {string} complaintType - Type of complaint (Garbage, Road Damage, etc.)
+ * @param {string} description - User's description of the complaint
+ * @param {string} location - Location of the complaint
  * @returns {Promise<Object>} AI analysis results
  */
-async function analyzeComplaintImage(imagePath, complaintType) {
+async function analyzeComplaintImage(imagePath, complaintType, description = '', location = '') {
     try {
         // Read image file and convert to base64
         const imageData = await fs.readFile(imagePath);
@@ -25,8 +27,8 @@ async function analyzeComplaintImage(imagePath, complaintType) {
         };
         const mimeType = mimeTypes[ext] || 'image/jpeg';
 
-        // Generate prompt based on complaint type
-        const prompt = generatePrompt(complaintType);
+        // Generate prompt based on complaint type with description context
+        const prompt = generatePrompt(complaintType, description, location);
 
         // Call Gemini API
         const result = await model.generateContent([
@@ -45,6 +47,9 @@ async function analyzeComplaintImage(imagePath, complaintType) {
         // Parse and validate response
         const analysis = parseGeminiResponse(text, complaintType);
 
+        // Boost severity based on description keywords
+        analysis.severity = adjustSeverityBasedOnDescription(analysis.severity, description, complaintType);
+
         return analysis;
 
     } catch (error) {
@@ -57,8 +62,10 @@ async function analyzeComplaintImage(imagePath, complaintType) {
 /**
  * Generate complaint-specific prompts for Gemini
  */
-function generatePrompt(complaintType) {
-    const baseInstruction = "You are an expert municipal inspector analyzing civic complaint images. Analyze this image carefully and respond ONLY with valid JSON. No markdown, no code blocks, no explanations - just pure JSON.";
+function generatePrompt(complaintType, description = '', location = '') {
+    const contextInfo = description ? `\n\nUSER'S DESCRIPTION: "${description}"\nLOCATION: "${location}"\n\nIMPORTANT: Consider BOTH the image AND the user's description. If the description mentions severity (like "heavy", "severe", "urgent", "critical", "full of", "overflowing"), increase the severity score accordingly.` : '';
+    
+    const baseInstruction = `You are an expert municipal inspector analyzing civic complaint images. Analyze this image carefully and respond ONLY with valid JSON. No markdown, no code blocks, no explanations - just pure JSON.${contextInfo}`;
 
     const prompts = {
         'Garbage': `${baseInstruction}
@@ -79,7 +86,14 @@ Analyze this garbage complaint image with high accuracy:
    - high: 51-75% coverage, health concerns, significant volume
    - critical: >75% coverage, severe health hazard, urgent action needed
 
-3. DETAILED ANALYSIS:
+3. SEVERITY BOOSTERS (Add +10-20 to severity if present):
+   - User mentions "heavy", "severe", "urgent", "critical" → +15
+   - User mentions "full of", "overflowing", "everywhere" → +15
+   - User mentions "days", "weeks" (not collected) → +10
+   - User mentions "smell", "odor", "stink" → +10
+   - Medical waste, hazardous materials visible → +20
+
+4. DETAILED ANALYSIS:
    - Count visible garbage items/piles
    - Estimate area coverage percentage
    - Identify waste types (plastic, organic, mixed, medical, etc.)
@@ -112,23 +126,24 @@ Analyze this road damage image with precision:
    - 61-80%: Large potholes (>60cm), deep cracks, structural damage
    - 81-100%: Severe damage, road collapse, immediate danger
 
-2. DAMAGE MEASUREMENT:
+2. SEVERITY BOOSTERS (Add +10-20 to severity if present):
+   - User mentions "large", "huge", "deep" → +15
+   - User mentions "dangerous", "accidents", "vehicle damage" → +15
+   - User mentions "main road", "highway", "busy area" → +10
+   - Multiple potholes visible → +10
+   - Structural damage visible → +20
+
+3. DAMAGE MEASUREMENT:
    - Estimate pothole/crack dimensions (width, depth, length)
    - Count number of damaged areas visible
    - Assess percentage of road surface affected
    - Evaluate structural integrity
 
-3. PRIORITY ASSESSMENT:
+4. PRIORITY ASSESSMENT:
    - low: Cosmetic damage, no safety risk, <25% road affected
    - medium: Moderate damage, minor safety concern, 25-50% affected
    - high: Significant damage, safety hazard, 51-75% affected
    - critical: Severe damage, immediate danger, >75% affected
-
-4. TRAFFIC & SAFETY IMPACT:
-   - Vehicle damage risk (low/medium/high/critical)
-   - Traffic flow disruption
-   - Accident potential
-   - Pedestrian safety
 
 RESPOND WITH THIS EXACT JSON STRUCTURE:
 {
@@ -162,7 +177,13 @@ Analyze this water leakage with accuracy:
    - 61-80%: Strong flow, flooding risk
    - 81-100%: Pipe burst, severe flooding
 
-2. WATER WASTAGE ESTIMATION:
+2. SEVERITY BOOSTERS (Add +10-20 to severity if present):
+   - User mentions "burst", "broken pipe", "gushing" → +20
+   - User mentions "flooding", "overflow" → +15
+   - User mentions "days", "weeks" (leaking) → +10
+   - User mentions "heavy", "severe", "major" → +15
+
+3. WATER WASTAGE ESTIMATION:
    - Dripping: 10-50 liters/day
    - Steady flow: 100-500 liters/day
    - Strong flow: 1000-5000 liters/day
@@ -192,6 +213,12 @@ Analyze this street light issue:
    - 51-70%: Multiple lights or high-traffic area
    - 71-100%: Entire street dark, major safety concern
 
+2. SEVERITY BOOSTERS (Add +10-20 to severity if present):
+   - User mentions "entire street", "all lights", "multiple" → +20
+   - User mentions "dark", "dangerous", "unsafe" → +15
+   - User mentions "main road", "busy area" → +10
+   - User mentions "days", "weeks" (not working) → +10
+
 RESPOND WITH THIS EXACT JSON STRUCTURE:
 {
   "severity": <number 0-100>,
@@ -214,6 +241,13 @@ Analyze this drainage problem:
    - 31-50%: Significant blockage, standing water
    - 51-70%: Severe blockage, overflow risk
    - 71-100%: Complete blockage, active overflow
+
+2. SEVERITY BOOSTERS (Add +10-20 to severity if present):
+   - User mentions "overflowing", "flooding" → +20
+   - User mentions "blocked", "clogged", "stuck" → +15
+   - User mentions "heavy", "severe", "major leakage" → +15
+   - User mentions "smell", "sewage", "waste water" → +10
+   - User mentions "days", "weeks" (blocked) → +10
 
 RESPOND WITH THIS EXACT JSON STRUCTURE:
 {
@@ -319,6 +353,95 @@ function getDefaultAnalysis(complaintType) {
         analyzedAt: new Date(),
         aiError: true
     };
+}
+
+/**
+ * Adjust severity based on description keywords
+ */
+function adjustSeverityBasedOnDescription(baseSeverity, description, complaintType) {
+    if (!description) return baseSeverity;
+    
+    const desc = description.toLowerCase();
+    let adjustedSeverity = baseSeverity;
+    
+    // High severity keywords (+15-20 points)
+    const criticalKeywords = [
+        'severe', 'critical', 'urgent', 'emergency', 'dangerous',
+        'heavy', 'major', 'serious', 'extreme', 'terrible'
+    ];
+    
+    const highVolumeKeywords = [
+        'full of', 'filled with', 'overflowing', 'everywhere',
+        'entire', 'whole', 'complete', 'massive', 'huge', 'large'
+    ];
+    
+    const timeKeywords = [
+        'days', 'weeks', 'months', 'long time', 'since'
+    ];
+    
+    const healthKeywords = [
+        'smell', 'stink', 'odor', 'disease', 'mosquito',
+        'rats', 'rodents', 'contaminated', 'toxic', 'hazardous'
+    ];
+    
+    // Check for critical keywords
+    if (criticalKeywords.some(keyword => desc.includes(keyword))) {
+        adjustedSeverity += 15;
+        console.log('   📈 Severity boosted +15 (critical keywords detected)');
+    }
+    
+    // Check for high volume keywords
+    if (highVolumeKeywords.some(keyword => desc.includes(keyword))) {
+        adjustedSeverity += 15;
+        console.log('   📈 Severity boosted +15 (high volume keywords detected)');
+    }
+    
+    // Check for time-related keywords (indicates long-standing issue)
+    if (timeKeywords.some(keyword => desc.includes(keyword))) {
+        adjustedSeverity += 10;
+        console.log('   📈 Severity boosted +10 (time-related keywords detected)');
+    }
+    
+    // Check for health-related keywords
+    if (healthKeywords.some(keyword => desc.includes(keyword))) {
+        adjustedSeverity += 10;
+        console.log('   📈 Severity boosted +10 (health keywords detected)');
+    }
+    
+    // Type-specific keyword checks
+    if (complaintType === 'Garbage') {
+        if (desc.includes('not collected') || desc.includes('uncollected')) {
+            adjustedSeverity += 10;
+            console.log('   📈 Severity boosted +10 (garbage not collected)');
+        }
+    }
+    
+    if (complaintType === 'Road Damage') {
+        if (desc.includes('accident') || desc.includes('vehicle damage')) {
+            adjustedSeverity += 15;
+            console.log('   📈 Severity boosted +15 (accident/damage risk)');
+        }
+    }
+    
+    if (complaintType === 'Water Leakage' || complaintType === 'Drainage') {
+        if (desc.includes('burst') || desc.includes('broken pipe')) {
+            adjustedSeverity += 20;
+            console.log('   📈 Severity boosted +20 (pipe burst detected)');
+        }
+        if (desc.includes('flood') || desc.includes('overflow')) {
+            adjustedSeverity += 15;
+            console.log('   📈 Severity boosted +15 (flooding detected)');
+        }
+    }
+    
+    // Cap at 100
+    adjustedSeverity = Math.min(100, adjustedSeverity);
+    
+    if (adjustedSeverity > baseSeverity) {
+        console.log(`   ✅ Final severity: ${baseSeverity}% → ${adjustedSeverity}%`);
+    }
+    
+    return adjustedSeverity;
 }
 
 module.exports = {
