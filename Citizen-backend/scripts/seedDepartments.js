@@ -39,8 +39,9 @@ const departments = [
 async function seedDepartments() {
   try {
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/smc_citizen');
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/smc_citizen');
     console.log('✅ Connected to MongoDB');
+    console.log('📌 DB Name:', mongoose.connection.name);
 
     // Clear existing departments
     await Department.deleteMany({});

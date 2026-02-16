@@ -4,14 +4,13 @@ const fs = require('fs').promises;
 const path = require('path');
 
 /**
- * Analyze complaint image using Gemini AI
+ * Analyze complaint image using Gemini AI and detect complaint type
  * @param {string} imagePath - Path to the uploaded image
- * @param {string} complaintType - Type of complaint (Garbage, Road Damage, etc.)
- * @param {string} description - User's description of the complaint
+ * @param {string} description - User's description of the complaint (optional)
  * @param {string} location - Location of the complaint
- * @returns {Promise<Object>} AI analysis results
+ * @returns {Promise<Object>} AI analysis results including detected complaint type
  */
-async function analyzeComplaintImage(imagePath, complaintType, description = '', location = '') {
+async function analyzeComplaintImage(imagePath, complaintType = null, description = '', location = '') {
     try {
         // Read image file and convert to base64
         const imageData = await fs.readFile(imagePath);
@@ -26,6 +25,13 @@ async function analyzeComplaintImage(imagePath, complaintType, description = '',
             '.webp': 'image/webp'
         };
         const mimeType = mimeTypes[ext] || 'image/jpeg';
+
+        // If no complaint type provided, detect it first
+        if (!complaintType) {
+            console.log('🔍 Detecting complaint type from image...');
+            complaintType = await detectComplaintType(base64Image, mimeType, description, location);
+            console.log(`✅ Detected complaint type: ${complaintType}`);
+        }
 
         // Generate prompt based on complaint type with description context
         const prompt = generatePrompt(complaintType, description, location);
@@ -47,6 +53,9 @@ async function analyzeComplaintImage(imagePath, complaintType, description = '',
         // Parse and validate response
         const analysis = parseGeminiResponse(text, complaintType);
 
+        // Add detected complaint type to analysis
+        analysis.detectedComplaintType = complaintType;
+
         // Boost severity based on description keywords
         analysis.severity = adjustSeverityBasedOnDescription(analysis.severity, description, complaintType);
 
@@ -55,7 +64,68 @@ async function analyzeComplaintImage(imagePath, complaintType, description = '',
     } catch (error) {
         console.error('Gemini AI analysis error:', error);
         // Return default analysis on error (graceful degradation)
-        return getDefaultAnalysis(complaintType);
+        return getDefaultAnalysis(complaintType || 'Garbage');
+    }
+}
+
+/**
+ * Detect complaint type from image using AI
+ */
+async function detectComplaintType(base64Image, mimeType, description = '', location = '') {
+    try {
+        const contextInfo = description ? `\n\nUSER'S DESCRIPTION: "${description}"\nLOCATION: "${location}"` : '';
+        
+        const prompt = `You are an expert municipal inspector. Analyze this image and determine the type of civic complaint.${contextInfo}
+
+AVAILABLE COMPLAINT TYPES:
+1. "Garbage Collection" - Garbage piles, overflowing bins, litter, waste accumulation
+2. "Road Damage" - Potholes, cracks, damaged roads, broken pavement
+3. "Water Leakage" - Water leaks, pipe bursts, water wastage, broken water lines
+4. "Street Light" - Non-functioning street lights, broken lights, dark streets
+5. "Drainage" - Blocked drains, overflowing sewers, drainage issues, water logging
+
+INSTRUCTIONS:
+- Analyze the image carefully
+- Consider the user's description if provided
+- Identify the PRIMARY issue visible in the image
+- Respond with ONLY ONE of the exact complaint type names listed above
+- No explanations, no JSON, just the complaint type name
+
+RESPOND WITH ONLY THE COMPLAINT TYPE NAME (e.g., "Garbage Collection" or "Road Damage")`;
+
+        const result = await model.generateContent([
+            prompt,
+            {
+                inlineData: {
+                    mimeType: mimeType,
+                    data: base64Image
+                }
+            }
+        ]);
+
+        const response = await result.response;
+        const detectedType = response.text().trim();
+
+        // Map AI response to valid complaint types
+        const validTypes = [
+            'Garbage Collection',
+            'Road Damage',
+            'Water Leakage',
+            'Street Light',
+            'Drainage'
+        ];
+
+        // Find matching type (case-insensitive, partial match)
+        const matchedType = validTypes.find(type => 
+            detectedType.toLowerCase().includes(type.toLowerCase()) ||
+            type.toLowerCase().includes(detectedType.toLowerCase())
+        );
+
+        return matchedType || 'Garbage Collection'; // Default to Garbage if no match
+
+    } catch (error) {
+        console.error('Complaint type detection error:', error);
+        return 'Garbage Collection'; // Default fallback
     }
 }
 

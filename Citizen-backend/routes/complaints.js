@@ -134,36 +134,38 @@ router.post(
   upload.single("photo"),
   async (req, res) => {
     try {
-      const { type, description, location, latitude, longitude, autoDetectedLocation } = req.body;
-
-      if (!type) {
-        return res.status(400).json({ message: "Complaint type is required" });
-      }
+      const { description, location, latitude, longitude, autoDetectedLocation } = req.body;
 
       if (!req.file) {
         return res.status(400).json({ message: "Complaint photo is required" });
       }
 
-      // 🤖 AI ANALYSIS
+      // 🤖 AI ANALYSIS - Detect complaint type and analyze
       let aiAnalysis = null;
       let aiInsights = null;
+      let detectedType = null;
 
       try {
-        console.log(`🤖 Analyzing ${type} complaint image...`);
-        console.log(`   Description: "${description}"`);
+        console.log(`🤖 Analyzing complaint image...`);
+        console.log(`   Description: "${description || 'none'}"`);
         console.log(`   Location: "${location}"`);
         
-        // Pass description and location to AI for better analysis
-        aiAnalysis = await analyzeComplaintImage(req.file.path, type, description, location);
+        // AI will detect the complaint type from the image
+        aiAnalysis = await analyzeComplaintImage(req.file.path, null, description, location);
+        detectedType = aiAnalysis.detectedComplaintType;
 
         // Calculate priority score
-        const priorityScore = calculatePriorityScore(aiAnalysis, type, location);
+        const priorityScore = calculatePriorityScore(aiAnalysis, detectedType, location);
         aiAnalysis.priorityScore = priorityScore;
 
-        console.log(`✅ AI Analysis complete - Severity: ${aiAnalysis.severity}%, Priority: ${aiAnalysis.priorityLevel}`);
+        console.log(`✅ AI Analysis complete:`);
+        console.log(`   Detected Type: ${detectedType}`);
+        console.log(`   Severity: ${aiAnalysis.severity}%`);
+        console.log(`   Priority: ${aiAnalysis.priorityLevel}`);
 
         // Prepare insights for response
         aiInsights = {
+          detectedType: detectedType,
           severity: `${aiAnalysis.severity}%`,
           priority: aiAnalysis.priorityLevel,
           priorityScore: priorityScore,
@@ -176,10 +178,12 @@ router.post(
       } catch (aiError) {
         console.error('⚠️ AI analysis failed:', aiError.message);
         // Continue without AI analysis (graceful degradation)
+        detectedType = 'Garbage Collection'; // Default
         aiAnalysis = {
           severity: 50,
           priorityLevel: 'medium',
           priorityScore: 50,
+          detectedComplaintType: detectedType,
           aiError: true
         };
       }
@@ -190,17 +194,17 @@ router.post(
         longitude: parseFloat(longitude)
       } : undefined;
 
-      // 🏢 AUTO-ASSIGN TO DEPARTMENT
-      const assignedDepartment = await assignComplaintToDepartment(type);
+      // 🏢 AUTO-ASSIGN TO DEPARTMENT based on detected type
+      const assignedDepartment = await assignComplaintToDepartment(detectedType);
       if (assignedDepartment) {
-        console.log(`✅ Complaint auto-assigned to department`);
+        console.log(`✅ Complaint auto-assigned to department: ${assignedDepartment.name}`);
       }
 
-      // Create complaint with AI data and geo-location
+      // Create complaint with AI-detected type
       const complaint = new Complaint({
         citizen: req.userId,
-        type,
-        description: description || aiAnalysis?.description || aiAnalysis?.aiDescription,
+        type: detectedType, // AI-detected type
+        description: description || aiAnalysis?.description || aiAnalysis?.aiDescription || '',
         location,
         coordinates,
         autoDetectedLocation,

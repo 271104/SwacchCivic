@@ -7,8 +7,9 @@ require('dotenv').config();
 async function createAdmin() {
   try {
     // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/smc_citizen');
+    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/smc_citizen');
     console.log('✅ Connected to MongoDB');
+    console.log('📌 DB Name:', mongoose.connection.name);
 
     // Check if admin already exists
     const existingAdmin = await Admin.findOne({});
