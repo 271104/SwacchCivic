@@ -33,7 +33,7 @@ async function analyzeComplaintImage(imagePath, complaintType = null, descriptio
         const contextInfo = description ? `\n\nUSER'S DESCRIPTION: "${description}"\nLOCATION: "${location}"` : '';
 
         // THE PROMPT - Two-stage validation like reference project
-        const prompt = `FIRST, determine if this image is a valid civic complaint or not.${contextInfo}
+        const prompt = `FIRST, determine whether this image represents a VALID civic complaint.${contextInfo}
 
 INVALID images include:
 - Photos of people (faces, selfies, portraits, groups)
@@ -42,38 +42,45 @@ INVALID images include:
 - Animals or pets
 - Vehicles without visible civic issues
 - Random objects unrelated to civic problems
-- Blurry or unclear images
+- Blurry, dark, or unclear images
 
 VALID civic complaints include:
 - Garbage Collection (waste accumulation, overflowing bins, litter)
 - Water Leakage (pipes, taps, flooding, water wastage)
-- Road Damage (potholes, cracks, broken roads)
-- Street Light (broken lights, not working, dark streets)
-- Drainage (blocked drains, sewage problems, water logging)
+- Road Damage (potholes, cracks, broken pavement)
+- Street Light (non-functioning lights, broken poles, dark streets)
+- Drainage (blocked drains, sewage overflow, water logging)
 
-If the image is INVALID (not a civic complaint), return:
+If the image is NOT a valid civic complaint, respond with:
 {
   "is_valid_complaint": false,
-  "rejection_reason": "Explain why this is not a valid complaint"
+  "rejection_reason": "clear reason why image is invalid"
 }
 
-If the image is VALID, return:
+If the image IS a valid civic complaint, respond with:
 {
   "is_valid_complaint": true,
-  "category": "One of: Garbage Collection, Water Leakage, Road Damage, Street Light, Drainage",
-  "severity": 75,
-  "severity_level": "high",
-  "description": "Short explanation of the issue observed",
-  "detected_issues": ["issue1", "issue2"]
+  "category": "Garbage Collection | Water Leakage | Road Damage | Street Light | Drainage | Unknown",
+  "severity": 0-100,
+  "severity_level": "Low | Medium | High | Critical",
+  "description": "brief factual description of the visible issue",
+  "detected_issues": ["issue1", "issue2"],
+  "confidence": 0-100
 }
 
 SEVERITY SCALE:
-- 0-25: Low (minor issue, routine maintenance)
-- 26-50: Medium (noticeable issue, needs attention)
-- 51-75: High (significant issue, urgent action needed)
-- 76-100: Critical (severe issue, immediate action required)
+0–25   → Low (minor issue, routine maintenance)
+26–50  → Medium (noticeable issue, needs attention)
+51–75  → High (significant issue, urgent action needed)
+76–100 → Critical (severe issue, immediate action required)
 
-Do not include markdown formatting. Just raw JSON.`;
+Rules:
+- Severity MUST be an integer between 0 and 100.
+- Confidence MUST be an integer between 0 and 100.
+- Do NOT guess details not visible in the image.
+- If uncertain, set category to "Unknown".
+- Output ONLY raw JSON.
+- Do NOT include markdown or extra text.`;
 
         console.log('🤖 Calling Gemini API for analysis...');
         
