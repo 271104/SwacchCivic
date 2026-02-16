@@ -433,11 +433,26 @@ function parseGeminiResponse(text, complaintType) {
  * Get default analysis when AI fails
  */
 function getDefaultAnalysis(complaintType) {
+    // Ensure we have a valid complaint type
+    const validTypes = [
+        'Garbage Collection',
+        'Road Damage',
+        'Water Leakage',
+        'Street Light',
+        'Drainage'
+    ];
+    
+    // If invalid type provided, use default
+    if (!complaintType || !validTypes.includes(complaintType)) {
+        complaintType = 'Garbage Collection';
+    }
+    
     return {
         severity: 50,
         priorityLevel: 'medium',
         detectedIssues: ['requires_manual_review'],
         description: `${complaintType} complaint requires manual review. AI analysis unavailable.`,
+        detectedComplaintType: complaintType, // Ensure this is always set
         confidence: 0,
         analyzedAt: new Date(),
         aiError: true

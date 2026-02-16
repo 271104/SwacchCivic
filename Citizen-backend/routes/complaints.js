@@ -152,7 +152,7 @@ router.post(
       // 🤖 AI ANALYSIS - Detect complaint type and analyze
       let aiAnalysis = null;
       let aiInsights = null;
-      let detectedType = null;
+      let detectedType = 'Garbage Collection'; // Default fallback
 
       try {
         console.log(`🤖 Starting AI analysis...`);
@@ -161,27 +161,36 @@ router.post(
         
         // AI will detect the complaint type from the image
         aiAnalysis = await analyzeComplaintImage(req.file.path, null, description, location);
-        detectedType = aiAnalysis.detectedComplaintType;
+        
+        // Ensure we have a valid detected type
+        if (aiAnalysis && aiAnalysis.detectedComplaintType) {
+          detectedType = aiAnalysis.detectedComplaintType;
+          console.log(`✅ AI detected type: ${detectedType}`);
+        } else {
+          console.log(`⚠️ AI did not return a type, using default: ${detectedType}`);
+        }
 
         console.log(`✅ AI Analysis complete:`);
         console.log(`   Detected Type: ${detectedType}`);
-        console.log(`   Severity: ${aiAnalysis.severity}%`);
-        console.log(`   Priority: ${aiAnalysis.priorityLevel}`);
+        console.log(`   Severity: ${aiAnalysis?.severity || 50}%`);
+        console.log(`   Priority: ${aiAnalysis?.priorityLevel || 'medium'}`);
 
         // Calculate priority score
         const priorityScore = calculatePriorityScore(aiAnalysis, detectedType, location);
-        aiAnalysis.priorityScore = priorityScore;
+        if (aiAnalysis) {
+          aiAnalysis.priorityScore = priorityScore;
+        }
 
         // Prepare insights for response
         aiInsights = {
           detectedType: detectedType,
-          severity: `${aiAnalysis.severity}%`,
-          priority: aiAnalysis.priorityLevel,
+          severity: `${aiAnalysis?.severity || 50}%`,
+          priority: aiAnalysis?.priorityLevel || 'medium',
           priorityScore: priorityScore,
           estimatedResolution: getEstimatedResolution(priorityScore),
-          description: aiAnalysis.description || aiAnalysis.aiDescription,
-          detectedIssues: aiAnalysis.detectedIssues || [],
-          confidence: aiAnalysis.confidence || 0
+          description: aiAnalysis?.description || aiAnalysis?.aiDescription || 'AI analysis completed',
+          detectedIssues: aiAnalysis?.detectedIssues || [],
+          confidence: aiAnalysis?.confidence || 0
         };
 
       } catch (aiError) {
@@ -189,8 +198,9 @@ router.post(
         console.error('   Error message:', aiError.message);
         console.error('   Error stack:', aiError.stack);
         
-        // Continue without AI analysis (graceful degradation)
-        detectedType = 'Garbage Collection'; // Default
+        // Ensure we have a valid type even on error
+        detectedType = 'Garbage Collection'; // Default fallback
+        
         aiAnalysis = {
           severity: 50,
           priorityLevel: 'medium',
@@ -211,6 +221,14 @@ router.post(
           confidence: 0
         };
       }
+
+      // Final validation - ensure type is never undefined
+      if (!detectedType || detectedType === 'undefined') {
+        console.error('⚠️ detectedType is invalid, forcing default');
+        detectedType = 'Garbage Collection';
+      }
+
+      console.log(`📋 Final complaint type: ${detectedType}`);
 
       // Prepare geo-location data
       const coordinates = (latitude && longitude) ? {
