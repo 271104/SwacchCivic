@@ -38,12 +38,28 @@ app.use(cors({
 );
 
 // ---------------- STATIC FILES ----------------
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, "uploads", "complaints");
+const fs = require("fs");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log("✅ Created uploads directory:", uploadsDir);
+}
+
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // ---------------- ENV ----------------
 const PORT = process.env.PORT || 5000;
 const MONGO_URI =
   process.env.MONGO_URI || "mongodb://127.0.0.1:27017/smc_db";
+
+// Log environment status (without exposing sensitive data)
+console.log("🔧 Environment Configuration:");
+console.log("   PORT:", PORT);
+console.log("   MONGO_URI:", MONGO_URI ? "✅ Set" : "❌ Missing");
+console.log("   JWT_SECRET:", process.env.JWT_SECRET ? "✅ Set" : "❌ Missing");
+console.log("   GEMINI_API_KEY:", process.env.GEMINI_API_KEY ? "✅ Set" : "❌ Missing");
+console.log("   NODE_ENV:", process.env.NODE_ENV || "development");
 
 // ---------------- DB CONNECT ----------------
 const connectDB = async () => {
