@@ -12,9 +12,14 @@ const path = require('path');
  */
 async function analyzeComplaintImage(imagePath, complaintType = null, description = '', location = '') {
     try {
+        console.log('🔍 AI Analysis - Reading image file:', imagePath);
+        
         // Read image file and convert to base64
         const imageData = await fs.readFile(imagePath);
+        console.log('✅ Image file read successfully, size:', imageData.length, 'bytes');
+        
         const base64Image = imageData.toString('base64');
+        console.log('✅ Image converted to base64');
 
         // Determine MIME type from file extension
         const ext = path.extname(imagePath).toLowerCase();
@@ -25,6 +30,7 @@ async function analyzeComplaintImage(imagePath, complaintType = null, descriptio
             '.webp': 'image/webp'
         };
         const mimeType = mimeTypes[ext] || 'image/jpeg';
+        console.log('📄 Image MIME type:', mimeType);
 
         // If no complaint type provided, detect it first
         if (!complaintType) {
@@ -36,6 +42,7 @@ async function analyzeComplaintImage(imagePath, complaintType = null, descriptio
         // Generate prompt based on complaint type with description context
         const prompt = generatePrompt(complaintType, description, location);
 
+        console.log('🤖 Calling Gemini API...');
         // Call Gemini API
         const result = await model.generateContent([
             prompt,
@@ -49,6 +56,7 @@ async function analyzeComplaintImage(imagePath, complaintType = null, descriptio
 
         const response = await result.response;
         const text = response.text();
+        console.log('✅ Gemini API response received');
 
         // Parse and validate response
         const analysis = parseGeminiResponse(text, complaintType);
@@ -62,9 +70,20 @@ async function analyzeComplaintImage(imagePath, complaintType = null, descriptio
         return analysis;
 
     } catch (error) {
-        console.error('Gemini AI analysis error:', error);
+        console.error('❌ Gemini AI analysis error:', error);
+        console.error('   Error name:', error.name);
+        console.error('   Error message:', error.message);
+        
+        // Check for specific error types
+        if (error.message && error.message.includes('GEMINI_API_KEY')) {
+            console.error('   ⚠️ GEMINI_API_KEY not configured!');
+        }
+        if (error.code === 'ENOENT') {
+            console.error('   ⚠️ Image file not found:', error.path);
+        }
+        
         // Return default analysis on error (graceful degradation)
-        return getDefaultAnalysis(complaintType || 'Garbage');
+        return getDefaultAnalysis(complaintType || 'Garbage Collection');
     }
 }
 

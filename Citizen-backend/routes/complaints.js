@@ -134,11 +134,20 @@ router.post(
   upload.single("photo"),
   async (req, res) => {
     try {
+      console.log('📝 Complaint creation started');
+      console.log('   User ID:', req.userId);
+      console.log('   File received:', !!req.file);
+      console.log('   Body:', JSON.stringify(req.body, null, 2));
+
       const { description, location, latitude, longitude, autoDetectedLocation } = req.body;
 
       if (!req.file) {
+        console.error('❌ No file uploaded');
         return res.status(400).json({ message: "Complaint photo is required" });
       }
+
+      console.log('   File path:', req.file.path);
+      console.log('   File size:', req.file.size);
 
       // 🤖 AI ANALYSIS - Detect complaint type and analyze
       let aiAnalysis = null;
@@ -146,7 +155,7 @@ router.post(
       let detectedType = null;
 
       try {
-        console.log(`🤖 Analyzing complaint image...`);
+        console.log(`🤖 Starting AI analysis...`);
         console.log(`   Description: "${description || 'none'}"`);
         console.log(`   Location: "${location}"`);
         
@@ -154,14 +163,14 @@ router.post(
         aiAnalysis = await analyzeComplaintImage(req.file.path, null, description, location);
         detectedType = aiAnalysis.detectedComplaintType;
 
-        // Calculate priority score
-        const priorityScore = calculatePriorityScore(aiAnalysis, detectedType, location);
-        aiAnalysis.priorityScore = priorityScore;
-
         console.log(`✅ AI Analysis complete:`);
         console.log(`   Detected Type: ${detectedType}`);
         console.log(`   Severity: ${aiAnalysis.severity}%`);
         console.log(`   Priority: ${aiAnalysis.priorityLevel}`);
+
+        // Calculate priority score
+        const priorityScore = calculatePriorityScore(aiAnalysis, detectedType, location);
+        aiAnalysis.priorityScore = priorityScore;
 
         // Prepare insights for response
         aiInsights = {
@@ -176,7 +185,10 @@ router.post(
         };
 
       } catch (aiError) {
-        console.error('⚠️ AI analysis failed:', aiError.message);
+        console.error('⚠️ AI analysis failed:', aiError);
+        console.error('   Error message:', aiError.message);
+        console.error('   Error stack:', aiError.stack);
+        
         // Continue without AI analysis (graceful degradation)
         detectedType = 'Garbage Collection'; // Default
         aiAnalysis = {
@@ -184,7 +196,19 @@ router.post(
           priorityLevel: 'medium',
           priorityScore: 50,
           detectedComplaintType: detectedType,
-          aiError: true
+          aiError: true,
+          errorMessage: aiError.message
+        };
+        
+        aiInsights = {
+          detectedType: detectedType,
+          severity: '50%',
+          priority: 'medium',
+          priorityScore: 50,
+          estimatedResolution: 'Manual review required',
+          description: 'AI analysis unavailable - complaint will be reviewed manually',
+          detectedIssues: ['requires_manual_review'],
+          confidence: 0
         };
       }
 
@@ -194,12 +218,22 @@ router.post(
         longitude: parseFloat(longitude)
       } : undefined;
 
+      console.log('🏢 Assigning to department...');
       // 🏢 AUTO-ASSIGN TO DEPARTMENT based on detected type
-      const assignedDepartment = await assignComplaintToDepartment(detectedType);
-      if (assignedDepartment) {
-        console.log(`✅ Complaint auto-assigned to department: ${assignedDepartment.name}`);
+      let assignedDepartment = null;
+      try {
+        assignedDepartment = await assignComplaintToDepartment(detectedType);
+        if (assignedDepartment) {
+          console.log(`✅ Complaint auto-assigned to department: ${assignedDepartment.name}`);
+        } else {
+          console.log('⚠️ No department found for type:', detectedType);
+        }
+      } catch (deptError) {
+        console.error('⚠️ Department assignment failed:', deptError.message);
+        // Continue without department assignment
       }
 
+      console.log('💾 Saving complaint to database...');
       // Create complaint with AI-detected type
       const complaint = new Complaint({
         citizen: req.userId,
@@ -217,6 +251,7 @@ router.post(
       });
 
       await complaint.save();
+      console.log('✅ Complaint saved successfully:', complaint._id);
 
       res.status(201).json({
         message: "Complaint registered successfully",
@@ -225,8 +260,13 @@ router.post(
       });
 
     } catch (err) {
-      console.error("Create complaint error:", err.message);
-      res.status(500).json({ message: "Server error while creating complaint" });
+      console.error("❌ Create complaint error:", err);
+      console.error("   Error message:", err.message);
+      console.error("   Error stack:", err.stack);
+      res.status(500).json({ 
+        message: "Server error while creating complaint",
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+      });
     }
   }
 );
