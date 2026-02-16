@@ -164,10 +164,12 @@ function parseGeminiResponse(responseText) {
         // Extract JSON object
         const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
         if (!jsonMatch) {
+            console.error('No JSON found in Gemini response');
             throw new Error('No JSON found in response');
         }
 
         const parsed = JSON.parse(jsonMatch[0]);
+        console.log('✅ Parsed Gemini response:', JSON.stringify(parsed, null, 2));
 
         // Check if complaint is invalid
         if (parsed.is_valid_complaint === false) {
@@ -177,19 +179,23 @@ function parseGeminiResponse(responseText) {
             };
         }
 
-        // Normalize the response
-        return {
+        // Normalize the response - ensure all required fields exist
+        const normalized = {
             is_valid_complaint: true,
             category: parsed.category || 'Garbage Collection',
             severity: parseInt(parsed.severity) || 50,
             severity_level: parsed.severity_level || determineSeverityLevel(parsed.severity),
             description: parsed.description || 'Civic complaint detected',
-            detected_issues: parsed.detected_issues || []
+            detected_issues: Array.isArray(parsed.detected_issues) ? parsed.detected_issues : [],
+            confidence: parseInt(parsed.confidence) || 75
         };
 
+        console.log('✅ Normalized response:', JSON.stringify(normalized, null, 2));
+        return normalized;
+
     } catch (error) {
-        console.error('Failed to parse Gemini response:', error);
-        console.error('Raw response:', responseText.substring(0, 500));
+        console.error('❌ Failed to parse Gemini response:', error);
+        console.error('   Raw response:', responseText.substring(0, 500));
         
         // Return default valid complaint on parse error
         return {
@@ -198,7 +204,8 @@ function parseGeminiResponse(responseText) {
             severity: 50,
             severity_level: 'medium',
             description: 'Unable to parse AI response - manual review required',
-            detected_issues: ['parse_error']
+            detected_issues: ['parse_error'],
+            confidence: 50
         };
     }
 }

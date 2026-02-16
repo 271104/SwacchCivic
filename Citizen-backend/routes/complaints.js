@@ -268,14 +268,23 @@ router.post(
       const complaint = new Complaint({
         citizen: req.userId,
         type: detectedType, // AI-detected type
-        description: description || aiAnalysis?.description || aiAnalysis?.aiDescription || '',
+        description: description || aiAnalysis?.description || '',
         location,
         coordinates,
         autoDetectedLocation,
         manualLocation: location,
         photoPath: req.file.path,
         status: 'pending',
-        aiAnalysis: aiAnalysis || undefined,
+        aiAnalysis: {
+          severity: aiAnalysis?.severity || 50,
+          priorityLevel: aiAnalysis?.priorityLevel || 'medium',
+          priorityScore: aiAnalysis?.priorityScore || 50,
+          aiDescription: aiAnalysis?.description || '',
+          detectedIssues: aiAnalysis?.detectedIssues || [],
+          confidence: aiAnalysis?.confidence || 0,
+          analyzedAt: new Date(),
+          aiError: aiAnalysis?.aiError || false
+        },
         assignedDepartment: assignedDepartment || undefined,
         assignedAt: assignedDepartment ? new Date() : undefined
       });
