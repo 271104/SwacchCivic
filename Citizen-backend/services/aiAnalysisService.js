@@ -92,6 +92,10 @@ async function analyzeComplaintImage(imagePath, complaintType = null, descriptio
  */
 async function detectComplaintType(base64Image, mimeType, description = '', location = '') {
     try {
+        console.log('🔍 Starting complaint type detection...');
+        console.log('   Image size (base64):', base64Image.length, 'characters');
+        console.log('   MIME type:', mimeType);
+        
         const contextInfo = description ? `\n\nUSER'S DESCRIPTION: "${description}"\nLOCATION: "${location}"` : '';
         
         const prompt = `You are an expert municipal inspector. Analyze this image and determine the type of civic complaint.${contextInfo}
@@ -112,6 +116,8 @@ INSTRUCTIONS:
 
 RESPOND WITH ONLY THE COMPLAINT TYPE NAME (e.g., "Garbage Collection" or "Road Damage")`;
 
+        console.log('🤖 Calling Gemini API for type detection...');
+        
         const result = await model.generateContent([
             prompt,
             {
@@ -122,8 +128,12 @@ RESPOND WITH ONLY THE COMPLAINT TYPE NAME (e.g., "Garbage Collection" or "Road D
             }
         ]);
 
+        console.log('✅ Gemini API responded');
+        
         const response = await result.response;
         const detectedType = response.text().trim();
+        
+        console.log('📝 Raw AI response:', detectedType);
 
         // Map AI response to valid complaint types
         const validTypes = [
@@ -140,10 +150,21 @@ RESPOND WITH ONLY THE COMPLAINT TYPE NAME (e.g., "Garbage Collection" or "Road D
             type.toLowerCase().includes(detectedType.toLowerCase())
         );
 
-        return matchedType || 'Garbage Collection'; // Default to Garbage if no match
+        const finalType = matchedType || 'Garbage Collection';
+        console.log('✅ Matched complaint type:', finalType);
+        
+        return finalType;
 
     } catch (error) {
-        console.error('Complaint type detection error:', error);
+        console.error('❌ Complaint type detection error:', error);
+        console.error('   Error name:', error.name);
+        console.error('   Error message:', error.message);
+        console.error('   Error code:', error.code);
+        
+        if (error.message) {
+            console.error('   Full error:', error.message);
+        }
+        
         return 'Garbage Collection'; // Default fallback
     }
 }
