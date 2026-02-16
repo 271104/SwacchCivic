@@ -60,12 +60,12 @@ If the image is NOT a valid civic complaint, respond with:
 If the image IS a valid civic complaint, respond with:
 {
   "is_valid_complaint": true,
-  "category": "Garbage Collection | Water Leakage | Road Damage | Street Light | Drainage | Unknown",
-  "severity": 0-100,
-  "severity_level": "Low | Medium | High | Critical",
+  "category": "One of: Garbage Collection, Water Leakage, Road Damage, Street Light, Drainage, Unknown",
+  "severity": 75,
+  "severity_level": "High",
   "description": "brief factual description of the visible issue",
   "detected_issues": ["issue1", "issue2"],
-  "confidence": 0-100
+  "confidence": 85
 }
 
 SEVERITY SCALE:
