@@ -149,7 +149,7 @@ router.post(
       console.log('   File path:', req.file.path);
       console.log('   File size:', req.file.size);
 
-      // 🤖 AI ANALYSIS - Detect complaint type and analyze
+      // 🤖 AI ANALYSIS - Two-stage validation
       let aiAnalysis = null;
       let aiInsights = null;
       let detectedType = 'Garbage Collection'; // Default fallback
@@ -159,7 +159,7 @@ router.post(
         console.log(`   Description: "${description || 'none'}"`);
         console.log(`   Location: "${location}"`);
         
-        // AI will detect the complaint type from the image
+        // AI will validate and analyze the complaint image
         aiAnalysis = await analyzeComplaintImage(req.file.path, null, description, location);
         
         // Ensure we have a valid detected type
@@ -188,7 +188,7 @@ router.post(
           priority: aiAnalysis?.priorityLevel || 'medium',
           priorityScore: priorityScore,
           estimatedResolution: getEstimatedResolution(priorityScore),
-          description: aiAnalysis?.description || aiAnalysis?.aiDescription || 'AI analysis completed',
+          description: aiAnalysis?.description || 'Civic complaint detected',
           detectedIssues: aiAnalysis?.detectedIssues || [],
           confidence: aiAnalysis?.confidence || 0
         };
@@ -196,11 +196,23 @@ router.post(
       } catch (aiError) {
         console.error('⚠️ AI analysis failed:', aiError);
         console.error('   Error message:', aiError.message);
-        console.error('   Error stack:', aiError.stack);
         
-        // Ensure we have a valid type even on error
-        detectedType = 'Garbage Collection'; // Default fallback
+        // Check if it's an invalid complaint (selfie, personal item, etc.)
+        if (aiError.message && aiError.message.startsWith('INVALID_COMPLAINT:')) {
+          const rejectionReason = aiError.message.replace('INVALID_COMPLAINT: ', '');
+          console.log('❌ Invalid complaint rejected:', rejectionReason);
+          
+          return res.status(400).json({
+            success: false,
+            is_valid_complaint: false,
+            rejection_reason: rejectionReason,
+            message: 'Complaint rejected: Please capture an image of a civic issue (garbage, road damage, water leakage, etc.)',
+            guidance: 'Valid complaints include: Garbage Collection, Road Damage, Water Leakage, Street Light issues, or Drainage problems.'
+          });
+        }
         
+        // For other errors, use default values
+        detectedType = 'Garbage Collection';
         aiAnalysis = {
           severity: 50,
           priorityLevel: 'medium',
