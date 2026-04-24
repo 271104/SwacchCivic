@@ -8,6 +8,16 @@ All 5 complaints in the database show:
 - ❌ Confidence: 0%
 - ❌ Description: "AI analysis unavailable - complaint will be reviewed manually"
 
+## CRITICAL FIX APPLIED ✅
+**The system now REJECTS complaints when AI analysis fails**, instead of accepting them with default values. This ensures:
+- ✅ Only properly analyzed images are accepted
+- ✅ Invalid images (room photos, selfies, etc.) are rejected
+- ✅ No complaints are registered when AI service is unavailable
+- ✅ Users get clear error messages to try again later
+
+**Before Fix**: Room photo → Accepted as "Garbage" with 50% severity ❌
+**After Fix**: Room photo → Rejected with "AI service unavailable" error ✅
+
 ## Root Cause
 The Gemini API key in `.env` file is returning error:
 ```

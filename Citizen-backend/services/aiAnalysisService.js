@@ -144,17 +144,9 @@ Rules:
         console.error('   Error name:', error.name);
         console.error('   Error message:', error.message);
         
-        // Return default analysis on other errors
-        return {
-            detectedComplaintType: 'Garbage Collection',
-            severity: 50,
-            priorityLevel: 'medium',
-            description: 'AI analysis unavailable - complaint will be reviewed manually',
-            detectedIssues: ['requires_manual_review'],
-            confidence: 0,
-            analyzedAt: new Date(),
-            aiError: true
-        };
+        // CRITICAL: Don't return default values - throw error so complaint is rejected
+        // This ensures only properly analyzed images are accepted
+        throw new Error(`AI_ANALYSIS_FAILED: ${error.message}`);
     }
 }
 

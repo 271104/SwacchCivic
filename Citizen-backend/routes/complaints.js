@@ -207,31 +207,22 @@ router.post(
             is_valid_complaint: false,
             rejection_reason: rejectionReason,
             message: 'Complaint rejected: Please capture an image of a civic issue (garbage, road damage, water leakage, etc.)',
-            guidance: 'Valid complaints include: Garbage Collection, Road Damage, Water Leakage, Street Light issues, or Drainage problems.'
+            guidance: 'Valid complaints include: Garbage, Road Damage, Water Leakage, Street Light issues, or Drainage problems.'
           });
         }
         
-        // For other errors, use default values
-        detectedType = 'Garbage';
-        aiAnalysis = {
-          severity: 50,
-          priorityLevel: 'medium',
-          priorityScore: 50,
-          detectedComplaintType: detectedType,
-          aiError: true,
-          errorMessage: aiError.message
-        };
+        // CRITICAL: If AI analysis fails for any other reason (API error, network issue, etc.),
+        // REJECT the complaint instead of accepting it with default values.
+        // This ensures only properly analyzed complaints are registered.
+        console.error('❌ AI analysis failed - rejecting complaint for safety');
         
-        aiInsights = {
-          detectedType: detectedType,
-          severity: '50%',
-          priority: 'medium',
-          priorityScore: 50,
-          estimatedResolution: 'Manual review required',
-          description: 'AI analysis unavailable - complaint will be reviewed manually',
-          detectedIssues: ['requires_manual_review'],
-          confidence: 0
-        };
+        return res.status(503).json({
+          success: false,
+          message: 'AI analysis service is currently unavailable. Please try again later.',
+          error: 'AI_SERVICE_UNAVAILABLE',
+          details: 'The complaint image could not be analyzed. This may be due to an API configuration issue or temporary service outage.',
+          guidance: 'Please contact the administrator if this issue persists.'
+        });
       }
 
       // Final validation - ensure type is never undefined
