@@ -32,7 +32,7 @@ async function analyzeComplaintImage(imagePath, complaintType = null, descriptio
         // Build context from description and location
         const contextInfo = description ? `\n\nUSER'S DESCRIPTION: "${description}"\nLOCATION: "${location}"` : '';
 
-        // THE PROMPT - Two-stage validation like reference project
+        // THE PROMPT - Two-stage validation with improved categorization
         const prompt = `FIRST, determine whether this image represents a VALID civic complaint.${contextInfo}
 
 INVALID images include:
@@ -45,11 +45,18 @@ INVALID images include:
 - Blurry, dark, or unclear images
 
 VALID civic complaints include:
-- Garbage Collection (waste accumulation, overflowing bins, litter)
-- Water Leakage (pipes, taps, flooding, water wastage)
-- Road Damage (potholes, cracks, broken pavement)
-- Street Light (non-functioning lights, broken poles, dark streets)
-- Drainage (blocked drains, sewage overflow, water logging)
+- Garbage Collection: waste piles, overflowing bins, litter, plastic bags, food waste, scattered trash
+- Road Damage: potholes, cracks in asphalt/concrete, broken pavement, damaged road surface, uneven roads
+- Water Leakage: broken pipes, water flowing on streets, flooding, tap leakage, water wastage
+- Street Light: non-functioning lights, broken poles, dark streets at night, damaged electrical fixtures
+- Drainage: blocked drains, sewage overflow, water logging, clogged gutters, stagnant water
+
+CRITICAL CATEGORIZATION RULES:
+1. If you see CRACKS, POTHOLES, or DAMAGED ROAD SURFACE → "Road Damage" (NOT Garbage)
+2. If you see WASTE, TRASH, PLASTIC, or GARBAGE PILES → "Garbage Collection" (NOT Road Damage)
+3. If you see WATER FLOWING or FLOODING → "Water Leakage" (NOT Drainage)
+4. If you see BLOCKED DRAIN or SEWAGE → "Drainage" (NOT Water Leakage)
+5. Pay attention to the USER'S DESCRIPTION - it provides important context
 
 If the image is NOT a valid civic complaint, respond with:
 {
@@ -80,7 +87,8 @@ Rules:
 - Do NOT guess details not visible in the image.
 - If uncertain, set category to "Unknown".
 - Output ONLY raw JSON.
-- Do NOT include markdown or extra text.`;
+- Do NOT include markdown or extra text.
+- CAREFULLY distinguish between categories - road cracks are NOT garbage!`;
 
         console.log('🤖 Calling Gemini API for analysis...');
         
