@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 // Use environment variable for API URL, fallback to production URL
 const API_URL = import.meta.env.VITE_API_URL || 'https://swacchcivic.onrender.com/api';
@@ -42,18 +43,43 @@ api.interceptors.response.use(
             // Unauthorized - token expired or invalid
             console.log('401 Unauthorized - Token issue detected');
             
-            // Don't redirect if we're already on a login page
-            const currentPath = window.location.pathname;
-            if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
-                console.log('Clearing auth and redirecting to login');
+            const errorMessage = error.response?.data?.message || '';
+            
+            // Check if it's a token expiration issue
+            if (errorMessage.includes('expired') || errorMessage.includes('Invalid or expired token')) {
+                console.log('Token expired - clearing auth and redirecting');
+                
+                // Show user-friendly message
+                toast.error('Your session has expired. Please login again.');
+                
+                // Clear auth data
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
+                localStorage.removeItem('role');
                 
-                // Redirect based on current path
+                // Redirect to appropriate login page
+                const currentPath = window.location.pathname;
                 if (currentPath.includes('/officer')) {
-                    window.location.href = '/officer/login';
+                    setTimeout(() => window.location.href = '/officer/login', 1000);
+                } else if (currentPath.includes('/admin')) {
+                    setTimeout(() => window.location.href = '/admin/login', 1000);
                 } else {
-                    window.location.href = '/login';
+                    setTimeout(() => window.location.href = '/login', 1000);
+                }
+            } else {
+                // Other 401 errors (invalid credentials, etc.)
+                const currentPath = window.location.pathname;
+                if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
+                    console.log('Clearing auth and redirecting to login');
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    
+                    // Redirect based on current path
+                    if (currentPath.includes('/officer')) {
+                        window.location.href = '/officer/login';
+                    } else {
+                        window.location.href = '/login';
+                    }
                 }
             }
         } else if (error.response?.status === 403) {

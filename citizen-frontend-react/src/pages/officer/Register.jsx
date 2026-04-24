@@ -33,29 +33,24 @@ export default function OfficerRegister() {
             console.log('Departments fetched:', data);
             
             if (data.departments && data.departments.length > 0) {
-                setDepartments(data.departments);
+                // Map _id to id for consistency
+                const mappedDepartments = data.departments.map(dept => ({
+                    id: dept.id || dept._id,  // Use _id from MongoDB
+                    name: dept.name,
+                    complaintTypes: dept.complaintTypes,
+                    description: dept.description
+                }));
+                setDepartments(mappedDepartments);
             } else {
-                // Fallback departments if API returns empty
-                console.warn('No departments returned from API, using fallback');
-                setDepartments([
-                    { id: '1', name: 'Sanitation Department', complaintTypes: ['Garbage'] },
-                    { id: '2', name: 'Roads & Infrastructure Department', complaintTypes: ['Road Damage'] },
-                    { id: '3', name: 'Water Supply Department', complaintTypes: ['Water Leakage'] },
-                    { id: '4', name: 'Electrical Department', complaintTypes: ['Street Light'] },
-                    { id: '5', name: 'Drainage & Sewerage Department', complaintTypes: ['Drainage'] }
-                ]);
+                // If no departments, show error
+                console.error('No departments found in database');
+                toast.error('No departments available. Please contact admin.');
+                setDepartments([]);
             }
         } catch (error) {
             console.error('Failed to fetch departments:', error);
-            // Fallback departments if API fails
-            toast.error('Could not load departments. Using default list.');
-            setDepartments([
-                { id: '1', name: 'Sanitation Department', complaintTypes: ['Garbage'] },
-                { id: '2', name: 'Roads & Infrastructure Department', complaintTypes: ['Road Damage'] },
-                { id: '3', name: 'Water Supply Department', complaintTypes: ['Water Leakage'] },
-                { id: '4', name: 'Electrical Department', complaintTypes: ['Street Light'] },
-                { id: '5', name: 'Drainage & Sewerage Department', complaintTypes: ['Drainage'] }
-            ]);
+            toast.error('Could not load departments. Please try again later.');
+            setDepartments([]);
         } finally {
             setLoadingDepts(false);
         }
