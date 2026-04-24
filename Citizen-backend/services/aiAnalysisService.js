@@ -45,7 +45,7 @@ INVALID images include:
 - Blurry, dark, or unclear images
 
 VALID civic complaints include:
-- Garbage Collection: waste piles, overflowing bins, litter, plastic bags, food waste, scattered trash
+- Garbage: waste piles, overflowing bins, litter, plastic bags, food waste, scattered trash
 - Road Damage: potholes, cracks in asphalt/concrete, broken pavement, damaged road surface, uneven roads
 - Water Leakage: broken pipes, water flowing on streets, flooding, tap leakage, water wastage
 - Street Light: non-functioning lights, broken poles, dark streets at night, damaged electrical fixtures
@@ -53,7 +53,7 @@ VALID civic complaints include:
 
 CRITICAL CATEGORIZATION RULES:
 1. If you see CRACKS, POTHOLES, or DAMAGED ROAD SURFACE → "Road Damage" (NOT Garbage)
-2. If you see WASTE, TRASH, PLASTIC, or GARBAGE PILES → "Garbage Collection" (NOT Road Damage)
+2. If you see WASTE, TRASH, PLASTIC, or GARBAGE PILES → "Garbage" (NOT Road Damage)
 3. If you see WATER FLOWING or FLOODING → "Water Leakage" (NOT Drainage)
 4. If you see BLOCKED DRAIN or SEWAGE → "Drainage" (NOT Water Leakage)
 5. Pay attention to the USER'S DESCRIPTION - it provides important context
@@ -67,7 +67,7 @@ If the image is NOT a valid civic complaint, respond with:
 If the image IS a valid civic complaint, respond with:
 {
   "is_valid_complaint": true,
-  "category": "One of: Garbage Collection, Water Leakage, Road Damage, Street Light, Drainage, Unknown",
+  "category": "One of: Garbage, Water Leakage, Road Damage, Street Light, Drainage, Unknown",
   "severity": 75,
   "severity_level": "High",
   "description": "brief factual description of the visible issue",
@@ -190,7 +190,7 @@ function parseGeminiResponse(responseText) {
         // Normalize the response - ensure all required fields exist
         const normalized = {
             is_valid_complaint: true,
-            category: parsed.category || 'Garbage Collection',
+            category: parsed.category || 'Garbage',
             severity: parseInt(parsed.severity) || 50,
             severity_level: parsed.severity_level || determineSeverityLevel(parsed.severity),
             description: parsed.description || 'Civic complaint detected',
@@ -208,7 +208,7 @@ function parseGeminiResponse(responseText) {
         // Return default valid complaint on parse error
         return {
             is_valid_complaint: true,
-            category: 'Garbage Collection',
+            category: 'Garbage',
             severity: 50,
             severity_level: 'medium',
             description: 'Unable to parse AI response - manual review required',

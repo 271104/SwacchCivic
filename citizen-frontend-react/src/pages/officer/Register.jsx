@@ -27,7 +27,8 @@ export default function OfficerRegister() {
     const fetchDepartments = async () => {
         try {
             // Fetch departments from public endpoint (no auth required)
-            const response = await fetch('http://localhost:5000/api/departments');
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://swacchcivic.onrender.com/api';
+            const response = await fetch(`${apiUrl}/departments`);
             const data = await response.json();
             
             console.log('Departments fetched:', data);

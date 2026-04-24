@@ -6,6 +6,7 @@ import PriorityBadge from '../../components/common/PriorityBadge';
 import StatusBadge from '../../components/common/StatusBadge';
 import Loading from '../../components/common/Loading';
 import { formatDate } from '../../utils/helpers';
+import { getPhotoUrl } from '../../utils/photoUrl';
 import toast from 'react-hot-toast';
 
 export default function PendingComplaints() {
@@ -135,13 +136,13 @@ export default function PendingComplaints() {
                                 <div className="grid md:grid-cols-3 gap-6">
                                     {/* Image */}
                                     <div>
-                                        {complaint.photoUrl && (
+                                        {complaint.photoPath && (
                                             <img
-                                                src={complaint.photoUrl}
+                                                src={getPhotoUrl(complaint.photoPath)}
                                                 alt={complaint.type}
                                                 className="w-full h-48 object-cover rounded-lg"
                                                 onError={(e) => {
-                                                    console.error('Image load error:', complaint.photoUrl);
+                                                    console.error('Image load error:', complaint.photoPath);
                                                     e.target.style.display = 'none';
                                                 }}
                                             />

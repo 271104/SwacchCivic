@@ -24,6 +24,7 @@ import Departments from './pages/admin/Departments';
 import Officers from './pages/admin/Officers';
 import PendingApprovals from './pages/admin/PendingApprovals';
 import Statistics from './pages/admin/Statistics';
+import AdminComplaints from './pages/admin/Complaints';
 
 // Protected Route Component for Citizen/Officer
 const ProtectedRoute = ({ children, requiredRole }) => {
@@ -150,6 +151,14 @@ function AppRoutes() {
                     element={
                         <AdminProtectedRoute>
                             <AdminDashboard />
+                        </AdminProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/admin/complaints"
+                    element={
+                        <AdminProtectedRoute>
+                            <AdminComplaints />
                         </AdminProtectedRoute>
                     }
                 />

@@ -6,6 +6,7 @@ import PriorityBadge from '../../components/common/PriorityBadge';
 import StatusBadge from '../../components/common/StatusBadge';
 import Loading from '../../components/common/Loading';
 import { formatDate } from '../../utils/helpers';
+import { getPhotoUrl } from '../../utils/photoUrl';
 import toast from 'react-hot-toast';
 
 export default function ResolvedComplaints() {
@@ -95,13 +96,13 @@ export default function ResolvedComplaints() {
                         {filteredComplaints.map((complaint) => (
                             <div key={complaint._id} className="bg-gray-800 border border-gray-700 rounded-xl shadow-card p-6 hover:shadow-soft transition-shadow">
                                 {/* Image */}
-                                {complaint.photoUrl && (
+                                {complaint.photoPath && (
                                     <img
-                                        src={complaint.photoUrl}
+                                        src={getPhotoUrl(complaint.photoPath)}
                                         alt={complaint.type}
                                         className="w-full h-48 object-cover rounded-lg mb-4"
                                         onError={(e) => {
-                                            console.error('Image load error:', complaint.photoUrl);
+                                            console.error('Image load error:', complaint.photoPath);
                                             e.target.style.display = 'none';
                                         }}
                                     />

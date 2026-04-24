@@ -6,6 +6,7 @@ import PriorityBadge from '../../components/common/PriorityBadge';
 import StatusBadge from '../../components/common/StatusBadge';
 import Loading from '../../components/common/Loading';
 import { formatDate } from '../../utils/helpers';
+import { getPhotoUrl } from '../../utils/photoUrl';
 import toast from 'react-hot-toast';
 
 export default function MyComplaints() {
@@ -108,7 +109,7 @@ export default function MyComplaints() {
                                 {/* Image */}
                                 {complaint.photoPath && (
                                     <img
-                                        src={`http://localhost:5000/${complaint.photoPath.replace(/\\/g, '/')}`}
+                                        src={getPhotoUrl(complaint.photoPath)}
                                         alt={complaint.type}
                                         className="w-full h-48 object-cover rounded-lg mb-4"
                                     />

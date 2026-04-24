@@ -31,6 +31,7 @@ app.use(cors({
         "http://127.0.0.1:5173", 
         "http://localhost:5500", 
         "http://127.0.0.1:5500",
+        "http://192.168.1.6:5173",
         "https://swacchcivic.vercel.app"
     ],
     credentials: true
@@ -84,6 +85,7 @@ const adminAuthRoutes = require("./routes/admin/auth");
 const adminDepartmentRoutes = require("./routes/admin/departments");
 const adminOfficerRoutes = require("./routes/admin/officers");
 const adminStatsRoutes = require("./routes/admin/statistics");
+const adminComplaintsRoutes = require("./routes/admin/complaints");
 
 app.get("/", (req, res) => {
   res.send("SMC API running");
@@ -119,6 +121,7 @@ app.use("/api/admin", adminAuthRoutes);
 app.use("/api/admin/departments", adminDepartmentRoutes);
 app.use("/api/admin/officers", adminOfficerRoutes);
 app.use("/api/admin/stats", adminStatsRoutes);
+app.use("/api/admin/complaints", adminComplaintsRoutes);
 
 // ---------------- START SERVER ----------------
 app.listen(PORT, () => {

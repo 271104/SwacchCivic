@@ -115,6 +115,19 @@ export const adminAPI = {
     return response.data;
   },
 
+  // ==================== COMPLAINTS ====================
+  getComplaints: async (params = {}) => {
+    const api = createAdminAPI();
+    const response = await api.get('/admin/complaints', { params });
+    return response.data;
+  },
+
+  getComplaint: async (id) => {
+    const api = createAdminAPI();
+    const response = await api.get(`/admin/complaints/${id}`);
+    return response.data;
+  },
+
   // ==================== STATISTICS ====================
   getOverviewStats: async () => {
     const api = createAdminAPI();

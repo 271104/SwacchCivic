@@ -54,28 +54,32 @@ const Dashboard = () => {
       value: stats?.complaints?.total || 0,
       icon: '📋',
       color: 'bg-blue-500',
-      subtext: `${stats?.complaints?.recentWeek || 0} this week`
+      subtext: `${stats?.complaints?.recentWeek || 0} this week`,
+      link: '/admin/complaints?status=all'
     },
     {
       title: 'Pending Complaints',
       value: stats?.complaints?.pending || 0,
       icon: '⏳',
       color: 'bg-yellow-500',
-      subtext: 'Awaiting action'
+      subtext: 'Awaiting action',
+      link: '/admin/complaints?status=pending'
     },
     {
       title: 'Resolved Complaints',
       value: stats?.complaints?.resolved || 0,
       icon: '✅',
       color: 'bg-green-500',
-      subtext: `${stats?.complaints?.resolutionRate || 0}% resolution rate`
+      subtext: `${stats?.complaints?.resolutionRate || 0}% resolution rate`,
+      link: '/admin/complaints?status=resolved'
     },
     {
       title: 'Active Officers',
       value: stats?.users?.totalOfficers || 0,
       icon: '👮',
       color: 'bg-purple-500',
-      subtext: `${stats?.users?.pendingOfficers || 0} pending approval`
+      subtext: `${stats?.users?.pendingOfficers || 0} pending approval`,
+      link: '/admin/officers'
     },
     {
       title: 'Total Citizens',
@@ -89,7 +93,8 @@ const Dashboard = () => {
       value: stats?.departments?.total || 0,
       icon: '🏢',
       color: 'bg-red-500',
-      subtext: 'Active departments'
+      subtext: 'Active departments',
+      link: '/admin/departments'
     }
   ];
 
@@ -133,7 +138,13 @@ const Dashboard = () => {
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {statCards.map((card, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
+              <div
+                key={index}
+                onClick={() => card.link && navigate(card.link)}
+                className={`bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow ${
+                  card.link ? 'cursor-pointer hover:scale-105 transform transition-transform' : ''
+                }`}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className={`${card.color} text-white text-3xl p-3 rounded-lg`}>
                     {card.icon}
@@ -144,6 +155,11 @@ const Dashboard = () => {
                 </div>
                 <h3 className="text-gray-700 font-semibold mb-1">{card.title}</h3>
                 <p className="text-sm text-gray-500">{card.subtext}</p>
+                {card.link && (
+                  <div className="mt-2 text-xs text-blue-600 font-medium">
+                    Click to view →
+                  </div>
+                )}
               </div>
             ))}
           </div>

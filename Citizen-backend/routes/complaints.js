@@ -152,7 +152,7 @@ router.post(
       // 🤖 AI ANALYSIS - Two-stage validation
       let aiAnalysis = null;
       let aiInsights = null;
-      let detectedType = 'Garbage Collection'; // Default fallback
+      let detectedType = 'Garbage'; // Default fallback
 
       try {
         console.log(`🤖 Starting AI analysis...`);
@@ -212,7 +212,7 @@ router.post(
         }
         
         // For other errors, use default values
-        detectedType = 'Garbage Collection';
+        detectedType = 'Garbage';
         aiAnalysis = {
           severity: 50,
           priorityLevel: 'medium',
@@ -237,7 +237,7 @@ router.post(
       // Final validation - ensure type is never undefined
       if (!detectedType || detectedType === 'undefined') {
         console.error('⚠️ detectedType is invalid, forcing default');
-        detectedType = 'Garbage Collection';
+        detectedType = 'Garbage';
       }
 
       console.log(`📋 Final complaint type: ${detectedType}`);
