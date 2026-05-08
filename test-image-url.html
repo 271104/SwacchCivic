@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Image URL</title>
+</head>
+<body>
+    <h1>Testing Complaint Image URLs</h1>
+    
+    <h2>Test 1: Direct URL</h2>
+    <img src="http://192.168.1.6:5000/uploads/complaints/complaint-1776998107500-620283670.jpg" 
+         alt="Test Image" 
+         style="max-width: 500px; border: 2px solid red;"
+         onload="console.log('Image loaded successfully!')"
+         onerror="console.error('Image failed to load!')">
+    
+    <h2>Test 2: Localhost URL</h2>
+    <img src="http://localhost:5000/uploads/complaints/complaint-1776998107500-620283670.jpg" 
+         alt="Test Image" 
+         style="max-width: 500px; border: 2px solid blue;"
+         onload="console.log('Localhost image loaded!')"
+         onerror="console.error('Localhost image failed!')">
+    
+    <script>
+        console.log('Testing image URLs...');
+        console.log('API URL from env:', 'http://192.168.1.6:5000/api');
+        console.log('Base URL:', 'http://192.168.1.6:5000');
+        console.log('Photo path:', 'uploads/complaints/complaint-1776998107500-620283670.jpg');
+        console.log('Full URL:', 'http://192.168.1.6:5000/uploads/complaints/complaint-1776998107500-620283670.jpg');
+    </script>
+</body>
+</html>

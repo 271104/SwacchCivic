@@ -16,11 +16,17 @@ export const getBaseUrl = () => {
  * @returns {string} - Full URL to the photo
  */
 export const getPhotoUrl = (photoPath) => {
-  if (!photoPath) return null;
+  if (!photoPath) {
+    console.warn('getPhotoUrl: photoPath is null or undefined');
+    return null;
+  }
   
   const baseUrl = getBaseUrl();
   // Normalize path separators (Windows backslashes to forward slashes)
   const normalizedPath = photoPath.replace(/\\/g, '/');
   
-  return `${baseUrl}/${normalizedPath}`;
+  const fullUrl = `${baseUrl}/${normalizedPath}`;
+  console.log('getPhotoUrl:', { photoPath, baseUrl, normalizedPath, fullUrl });
+  
+  return fullUrl;
 };

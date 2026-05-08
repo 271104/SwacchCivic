@@ -28,10 +28,13 @@ app.use(express.json());
 app.use(cors({
     origin: [
         "http://localhost:5173", 
+        "http://localhost:5174",
         "http://127.0.0.1:5173", 
+        "http://127.0.0.1:5174",
         "http://localhost:5500", 
         "http://127.0.0.1:5500",
         "http://192.168.1.6:5173",
+        "http://192.168.1.6:5174",
         "https://swacchcivic.vercel.app"
     ],
     credentials: true
